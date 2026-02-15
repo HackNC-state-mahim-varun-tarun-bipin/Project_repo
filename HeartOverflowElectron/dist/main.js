@@ -13,6 +13,34 @@ let tray;
 let lastClipboardText = '';
 let isQuitting = false;
 let notificationTimeout = null;
+const SHORTCUT = 'CommandOrControl+Alt+Shift+K';
+function getCopyCommand() {
+    if (process.platform === 'darwin') {
+        return 'osascript -e \'tell application "System Events" to keystroke "c" using command down\'';
+    }
+    if (process.platform === 'win32') {
+        return 'powershell -NoProfile -Command "$wshell = New-Object -ComObject WScript.Shell; Start-Sleep -Milliseconds 50; $wshell.SendKeys(\'^c\')"';
+    }
+    return 'xdotool key ctrl+c';
+}
+function runSelectionFactcheck() {
+    const beforeCopy = electron_1.clipboard.readText();
+    const copyCommand = getCopyCommand();
+    (0, child_process_1.exec)(copyCommand, () => {
+        let attempts = 0;
+        const maxAttempts = 8;
+        const interval = setInterval(() => {
+            attempts += 1;
+            const currentText = electron_1.clipboard.readText();
+            const hasNewClipboardText = !!currentText && currentText !== beforeCopy;
+            if (hasNewClipboardText || attempts >= maxAttempts) {
+                clearInterval(interval);
+                showNotification();
+                checkClipboard();
+            }
+        }, 120);
+    });
+}
 function createDashboardWindow() {
     dashboardWindow = new electron_1.BrowserWindow({
         width: 800,
@@ -73,15 +101,7 @@ function createTray() {
         {
             label: 'Factcheck',
             click: () => {
-                const copyCommand = process.platform === 'darwin'
-                    ? 'osascript -e \'tell application "System Events" to keystroke "c" using command down\''
-                    : 'xdotool key ctrl+c';
-                (0, child_process_1.exec)(copyCommand, () => {
-                    setTimeout(() => {
-                        showNotification();
-                        checkClipboard();
-                    }, 200);
-                });
+                runSelectionFactcheck();
             }
         },
         { label: 'Open Dashboard', click: () => dashboardWindow.show() },
@@ -154,16 +174,8 @@ electron_1.app.whenReady().then(() => {
         dashboardWindow.show();
         dashboardWindow.focus();
     });
-    electron_1.globalShortcut.register('CommandOrControl+Alt+Shift+K', () => {
-        const copyCommand = process.platform === 'darwin'
-            ? 'osascript -e \'tell application "System Events" to keystroke "c" using command down\''
-            : 'xdotool key ctrl+c';
-        (0, child_process_1.exec)(copyCommand, () => {
-            setTimeout(() => {
-                showNotification();
-                checkClipboard();
-            }, 200);
-        });
+    electron_1.globalShortcut.register(SHORTCUT, () => {
+        runSelectionFactcheck();
     });
 });
 electron_1.app.on('window-all-closed', () => {

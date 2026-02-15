@@ -9,6 +9,38 @@ let tray: Tray;
 let lastClipboardText = '';
 let isQuitting = false;
 let notificationTimeout: NodeJS.Timeout | null = null;
+const SHORTCUT = 'CommandOrControl+Alt+Shift+K';
+
+function getCopyCommand() {
+  if (process.platform === 'darwin') {
+    return 'osascript -e \'tell application "System Events" to keystroke "c" using command down\'';
+  }
+  if (process.platform === 'win32') {
+    return 'powershell -NoProfile -Command "$wshell = New-Object -ComObject WScript.Shell; Start-Sleep -Milliseconds 50; $wshell.SendKeys(\'^c\')"';
+  }
+  return 'xdotool key ctrl+c';
+}
+
+function runSelectionFactcheck() {
+  const beforeCopy = clipboard.readText();
+  const copyCommand = getCopyCommand();
+
+  exec(copyCommand, () => {
+    let attempts = 0;
+    const maxAttempts = 8;
+    const interval = setInterval(() => {
+      attempts += 1;
+      const currentText = clipboard.readText();
+      const hasNewClipboardText = !!currentText && currentText !== beforeCopy;
+
+      if (hasNewClipboardText || attempts >= maxAttempts) {
+        clearInterval(interval);
+        showNotification();
+        checkClipboard();
+      }
+    }, 120);
+  });
+}
 
 function createDashboardWindow() {
   dashboardWindow = new BrowserWindow({
@@ -78,16 +110,7 @@ function createTray() {
     { 
       label: 'Factcheck', 
       click: () => {
-        const copyCommand = process.platform === 'darwin' 
-          ? 'osascript -e \'tell application "System Events" to keystroke "c" using command down\''
-          : 'xdotool key ctrl+c';
-        
-        exec(copyCommand, () => {
-          setTimeout(() => {
-            showNotification();
-            checkClipboard();
-          }, 200);
-        });
+        runSelectionFactcheck();
       }
     },
     { label: 'Open Dashboard', click: () => dashboardWindow.show() },
@@ -173,17 +196,8 @@ app.whenReady().then(() => {
     dashboardWindow.focus();
   });
   
-  globalShortcut.register('CommandOrControl+Alt+Shift+K', () => {
-    const copyCommand = process.platform === 'darwin' 
-      ? 'osascript -e \'tell application "System Events" to keystroke "c" using command down\''
-      : 'xdotool key ctrl+c';
-    
-    exec(copyCommand, () => {
-      setTimeout(() => {
-        showNotification();
-        checkClipboard();
-      }, 200);
-    });
+  globalShortcut.register(SHORTCUT, () => {
+    runSelectionFactcheck();
   });
 });
 
