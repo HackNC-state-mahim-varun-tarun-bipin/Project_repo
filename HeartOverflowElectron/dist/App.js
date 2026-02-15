@@ -158,7 +158,7 @@ const App = () => {
             border: "1px solid rgba(255, 255, 255, 0.1)",
         } },
         react_1.default.createElement(Title, { level: 2, style: { color: "#fff", marginBottom: "16px", marginTop: "0px", display: 'flex', justifyContent: 'space-between', alignItems: 'center' } },
-            "HeartOverflow",
+            "Verity",
             react_1.default.createElement(antd_1.Button, { icon: react_1.default.createElement(icons_1.SettingOutlined, null), onClick: () => setShowSettings(true), style: { backgroundColor: 'transparent', border: 'none', color: '#fff', fontSize: '20px' } })),
         react_1.default.createElement(antd_1.Card, { type: "inner", title: "Content", onClick: () => clipboardText.length > 100 && setIsContentExpanded(!isContentExpanded), style: {
                 backgroundColor: "#b9b9b9",

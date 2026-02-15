@@ -139,7 +139,7 @@ const App: React.FC = () => {
         level={2}
         style={{ color: "#fff", marginBottom: "16px", marginTop: "0px", display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
       >
-        HeartOverflow
+        Verity
         <Button
           icon={<SettingOutlined />}
           onClick={() => setShowSettings(true)}
